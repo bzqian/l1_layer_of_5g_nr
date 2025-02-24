@@ -20,6 +20,7 @@ pdsch.NLayers = 2;             % 传输层数
 pdsch.PortSet = [0, 2];        % 天线端口
 pdsch.DL_DMRS_typeA_pos = 2;   % DM-RS 起始符号位置 (2或3)
 pdsch.DL_DMRS_config_type = 2; % DM-RS 配置类型 (1或2)
+pdsch.DL_DMRS_max_len = 1;     % DM-RS 符号长度 (1或2)
 
 % SSB 参数
 ssb.BurstType = 'CaseB';       % SSB 突发类型 (30kHz)
@@ -62,9 +63,12 @@ function [indices, info] = generatePDSCHIndices(gNB, pdsch)
             for prb = pdsch.PRBSet
                 startSubcarrier = prb * 12;
                 subcarriers = startSubcarrier + (0:11);
-                linearIndices = sub2ind([NSubcarriers, SymbolsPerSlot, pdsch.NLayers], ...
-                                      subcarriers + 1, sym + 1, layer + 1);
-                indices = [indices; linearIndices(:)];
+                % 使用循环生成每个子载波的索引
+                for sc = subcarriers
+                    linearIndices = sub2ind([NSubcarriers, SymbolsPerSlot, pdsch.NLayers], ...
+                                          sc + 1, sym + 1, layer + 1);
+                    indices = [indices; linearIndices];
+                end
             end
         end
     end
@@ -88,9 +92,12 @@ function indices = generateDMRSIndices(gNB, pdsch)
                 % 根据 3GPP 38.211 7.4.1.1 生成 DM-RS 位置
                 k = mod(port, 2) + (0:2:11); % 类型2：每个PRB 6个RE
                 subcarriers = prb*12 + k;
-                linearIndices = sub2ind([NSubcarriers, SymbolsPerSlot, pdsch.NLayers], ...
-                                      subcarriers + 1, sym + 1, layer + 1);
-                indices = [indices; linearIndices(:)];
+                % 使用循环生成每个子载波的索引
+                for sc = subcarriers
+                    linearIndices = sub2ind([NSubcarriers, SymbolsPerSlot, pdsch.NLayers], ...
+                                          sc + 1, sym + 1, layer + 1);
+                    indices = [indices; linearIndices];
+                end
             end
         end
     end
@@ -152,11 +159,11 @@ function plotResourceGrid(grid, gNB, pdsch, ssb)
     end
     
     % 创建图例
-    h = zeros(3,1);
-    h(1) = plot(NaN,NaN,'s','MarkerFaceColor',[0.7 0.7 1],'MarkerEdgeColor','k');
-    h(2) = plot(NaN,NaN,'s','MarkerFaceColor',[1 0.7 0.7],'MarkerEdgeColor','k');
-    h(3) = plot(NaN,NaN,'s','MarkerFaceColor',[0.7 1 0.7],'MarkerEdgeColor','k');
-    legend(h, {'SSB','PDSCH','DM-RS'}, 'Location', 'southoutside','Orientation','horizontal');
+    % h = zeros(3,1);
+    % h(1) = plot(NaN,NaN,'s','MarkerFaceColor',[0.7 0.7 1],'MarkerEdgeColor','k');
+    % h(2) = plot(NaN,NaN,'s','MarkerFaceColor',[1 0.7 0.7],'MarkerEdgeColor','k');
+    % h(3) = plot(NaN,NaN,'s','MarkerFaceColor',[0.7 1 0.7],'MarkerEdgeColor','k');
+    % legend(h, {'SSB','PDSCH','DM-RS'}, 'Location', 'southoutside','Orientation','horizontal');
     
     set(gcf,'Position',[100 100 800 600]);
     sgtitle(sprintf('5G NR 资源网格 (NDLRB=%d, SCS=%dkHz, Ports=%s)',...
